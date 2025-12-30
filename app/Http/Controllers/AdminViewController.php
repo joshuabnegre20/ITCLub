@@ -28,10 +28,11 @@ class AdminViewController extends Controller
         $verifiedUsers = DB::table('user_db')->where('Verification', 'Verified')->count();
         $activities= DB::table("activities")->select('id','activity', 'club', 'created_by', 'role', 'created_at')->get();
         $projectList = DB::table('projects')->select('id','user_id','name','club','project_type', 'title', 'place', 'date','time','description', 'status', 'created_at')->get();
-        $sentActivities = DB::table('sent_activities')->select('id','student_id','activity_id', 'name', 'club','links','status')->get();
+        $sentActivities = DB::table('sent_activities')->select('id','student_id','activity_id', 'name', 'club','links','status','created_at')->get();
         $joinedProject = DB::table('joined_project')->select('id','student_id', 'name', 'club', 'joined_project_id', 'project_type', 'title', 'joined_at')->get();
-       
+       $club = DB::table('club')->select('club', 'created_at')->get();
         $all = $users->merge($staffs);
+        $staffList = DB::table('staffs')->select('id','name','last_name', 'address', 'gender','email', 'club', 'status','role')->get();
 
         return Inertia::render('AdminView', [
             'username' =>$username,
@@ -45,7 +46,9 @@ class AdminViewController extends Controller
             'lastName' => $lastname,
             'user_id' => $user_id,
             'projectList' => $projectList ?? [],
-            'joinedProject' => $joinedProject ?? []
+            'joinedProject' => $joinedProject ?? [],
+            'staffs' => $staffList ?? [],
+            'club' =>$club ?? []
             
         ]);
     }
@@ -77,4 +80,31 @@ class AdminViewController extends Controller
                 'status' => 'Canceled'
             ]);
     }
+  public function transfer(Request $request, $staffId)
+{
+    // Get targetClub from request body
+    $targetClub = $request->targetClub;
+    
+    // Validate the target club
+    $validClubs = ['Programming', 'Graphic Design', 'Video Editing'];
+    if (!in_array($targetClub, $validClubs)) {
+        return response()->json([
+            'message' => 'Invalid target club'
+        ], 400);
+    }
+    
+    // Update the staff's club using DB::table
+    $updated = DB::table('staffs')
+        ->where('id', $staffId)
+        ->update([
+            'club' => $targetClub,
+            'updated_at' => now()
+        ]);
+}
+
+public function delete($id){
+    DB::table('staffs')->where('id', $id)->delete();
+}
+    
+    
 }

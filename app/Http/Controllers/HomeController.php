@@ -37,15 +37,17 @@ class HomeController extends Controller
 
             $activeStaff = DB::table('staffs')->select('id','name','last_name', 'status')->where('club', $userClub)->get();
 
-            $getPostedData = DB :: table('post_db')->select('name', 'caption', 'picture', 'created_at', 'club')->get();
+            $getPostedData = DB :: table('post_db')->select('id','name','likes', 'caption', 'picture', 'created_at', 'club')->get();
         $getAdmin = DB::table('user_db')->where('role', 'Admin')->select('name','last_name', 'status')->get();
             $students = DB::table('user_db')->where('role', '!=', "Admin")->select('id','name', 'last_name','club', 'status')->get();
              $notifications = DB::table('notification')->select('id','user_id','name','club','notification', 'created_at', 'caption')->get();
              $team = DB::table('user_db')->where('role', '!=', 'Admin')->where('role', '!=', 'Adviser')->where('id', '!=', $user->id)->select('name','last_name', 'status')->get();
              $studentPost = DB::table('post_db')->where('user_id', $user->id)->select('id','name','club','caption', 'picture', 'created_at')->get();
-
+            $comments = DB::table('comments_column')->where('postID', )->select('comments','userId');
             $getUsername = DB::table('user_db')->where('id' ,$user->id)->value('username');
           //   $getPassworde = DB::table('user_db')->where('id' ,$user->id)->value('password');
+        
+          $likes = DB::table('post_db')->value('likes');
 
     return Inertia::render('HomePage', [
         'username'     => $user->name,
@@ -63,7 +65,8 @@ class HomeController extends Controller
         'admin' => $getAdmin ?? [],
         'team' => $team ?? [],
         'studentPost' => $studentPost ?? [],
-        'usernameP' =>$getUsername
+        'usernameP' =>$getUsername,
+        'likes' =>$likes
         ]);
 }
 public function selectActivity(Request $request)
@@ -128,6 +131,10 @@ public function selectActivity(Request $request)
             'picture' => $path,
             'created_at' => now()
         ]);
+
+       
+
+       
 
         DB::table('notification')->insert([
             'user_id' =>$request->userid,

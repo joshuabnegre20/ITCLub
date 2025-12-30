@@ -3,12 +3,57 @@ import { router, useForm } from "@inertiajs/react";
 import Certification from '../pdf/Certificate'
 import { pdf } from "@react-pdf/renderer";
 
-function Dashboard({ verifiedUsers, totalUsers, totalStaffs, totalActives }: { 
+
+
+
+
+type Club = {
+  id?: number;
+  club: string;
+  created_at: string;
+}
+
+function Dashboard({ club, verifiedUsers, totalUsers, totalStaffs, totalActives }: { 
   verifiedUsers: string; 
   totalActives: number; 
   totalUsers: number; 
   totalStaffs: number; 
+  club: Club[]
 }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{isOpen: boolean; club: Club | null}>({
+    isOpen: false,
+    club: null
+  });
+  
+  const { data, setData, post, processing, errors, reset } = useForm({
+    club_name: ''
+  });
+
+  const handleAddClub = (e: React.FormEvent) => {
+    e.preventDefault();
+    post('/admin/clubs', {
+      onSuccess: () => {
+        reset();
+        setIsModalOpen(false);
+      }
+    });
+  };
+
+  const handleDeleteClub = (clubToDelete: Club) => {
+    setDeleteConfirm({ isOpen: true, club: clubToDelete });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm.club) {
+      router.delete(`/admin/clubs/${deleteConfirm.club.club}`, {
+        onSuccess: () => {
+          setDeleteConfirm({ isOpen: false, club: null });
+        }
+      });
+    }
+  };
+
   const stats = [
     {
       label: "Total Users",
@@ -52,7 +97,16 @@ function Dashboard({ verifiedUsers, totalUsers, totalStaffs, totalActives }: {
           <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">Overview of platform statistics and metrics</p>
         </div>
-        <div className="text-4xl">📊</div>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold flex items-center space-x-2"
+          >
+            <span>➕</span>
+            <span>Add Club</span>
+          </button>
+          <div className="text-4xl">📊</div>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -75,6 +129,54 @@ function Dashboard({ verifiedUsers, totalUsers, totalStaffs, totalActives }: {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Clubs Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-800">Clubs Management</h3>
+          <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
+            {club.length} Clubs
+          </span>
+        </div>
+        
+        {club.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {club.map((clubItem, index) => (
+              <div
+                key={index}
+                className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors duration-200 group relative"
+              >
+                {/* Delete Button */}
+                <button
+                  onClick={() => handleDeleteClub(clubItem)}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 text-xs"
+                  title="Delete Club"
+                >
+                  ×
+                </button>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-800">{clubItem.club}</h4>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Created: {new Date(clubItem.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm ml-3">
+                    {clubItem.club.charAt(0)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-2">🏢</div>
+            <p className="text-gray-600">No clubs available</p>
+            <p className="text-gray-500 text-sm mt-1">Add your first club to get started</p>
+          </div>
+        )}
       </div>
 
       {/* Additional Stats Section */}
@@ -120,6 +222,112 @@ function Dashboard({ verifiedUsers, totalUsers, totalStaffs, totalActives }: {
           </div>
         </div>
       </div>
+
+      {/* Add Club Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-800">Add New Club</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <span className="text-2xl">×</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleAddClub} className="space-y-4">
+                <div>
+                  <label htmlFor="club_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Club Name
+                  </label>
+                  <input
+                    type="text"
+                    id="club_name"
+                    value={data.club_name}
+                    onChange={(e) => setData('club_name', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-black"
+                    placeholder="Enter club name"
+                    required
+                  />
+                  {errors.club_name && (
+                    <p className="text-red-500 text-sm mt-1">{errors.club_name}</p>
+                  )}
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors duration-200 font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={processing}
+                    className="flex-1 bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processing ? 'Adding...' : 'Add Club'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.isOpen && deleteConfirm.club && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-800">Delete Club</h3>
+                <button
+                  onClick={() => setDeleteConfirm({ isOpen: false, club: null })}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <span className="text-2xl">×</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 text-lg">⚠️</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-red-800">Warning: This action cannot be undone</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        Are you sure you want to delete the club "{deleteConfirm.club.club}"?
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    onClick={() => setDeleteConfirm({ isOpen: false, club: null })}
+                    className="flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors duration-200 font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 bg-red-500 text-white py-3 px-4 rounded-lg hover:bg-red-600 transition-colors duration-200 font-semibold"
+                  >
+                    Delete Club
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -148,9 +356,11 @@ type Activities = {
 
 function ManageUsers({ users }: { users: User[] }) {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
 
   const handleAction = async (action: string, userId: number, userRole: string) => {
     setActionLoading(userId);
+    setOpenDropdown(null); // Close dropdown when action starts
     
     try {
       if (action === 'promote') {
@@ -171,6 +381,10 @@ function ManageUsers({ users }: { users: User[] }) {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const toggleDropdown = (userId: number) => {
+    setOpenDropdown(openDropdown === userId ? null : userId);
   };
 
   const getStatusColor = (status: string) => {
@@ -290,56 +504,94 @@ function ManageUsers({ users }: { users: User[] }) {
                     </div>
                   </td>
 
-                  {/* Actions */}
+                  {/* Actions Dropdown */}
                   <td className="px-6 py-4">
-                    <div className="flex flex-col space-y-2 min-w-[200px]">
-                      {user.role !== 'Staff' && user.role !== 'Admin' && (
-                        <button
-                          onClick={() => handleAction('promote', user.id, user.role)}
-                          disabled={actionLoading === user.id}
-                          className="w-full bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                        >
-                          {actionLoading === user.id ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <>
-                              <span>⬆️</span>
-                              <span>Promote to Staff</span>
-                            </>
-                          )}
-                        </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => toggleDropdown(user.id)}
+                        disabled={actionLoading === user.id}
+                        className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300"
+                      >
+                        {actionLoading === user.id ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                            <span>Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>⚙️</span>
+                            <span>Actions</span>
+                            <svg 
+                              className={`w-4 h-4 transition-transform duration-200 ${openDropdown === user.id ? 'rotate-180' : ''}`} 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      {openDropdown === user.id && (
+                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                          <div className="py-1">
+                            {/* Promote to Staff */}
+                            {user.role !== 'Staff' && user.role !== 'Admin' && (
+                              <button
+                                onClick={() => handleAction('promote', user.id, user.role)}
+                                className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors duration-150 border-b border-gray-100"
+                              >
+                                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                  <span className="text-green-600">⬆️</span>
+                                </div>
+                                <div className="text-left">
+                                  <div className="font-medium">Promote to Staff</div>
+                                  <div className="text-xs text-gray-500">Grant staff privileges</div>
+                                </div>
+                              </button>
+                            )}
+                            
+                            {/* Verify User */}
+                            <button
+                              onClick={() => handleAction('verify', user.id, user.role)}
+                              className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 border-b border-gray-100"
+                            >
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span className="text-blue-600">✅</span>
+                              </div>
+                              <div className="text-left">
+                                <div className="font-medium">Verify User</div>
+                                <div className="text-xs text-gray-500">Mark account as verified</div>
+                              </div>
+                            </button>
+                            
+                            {/* Delete User */}
+                            <button
+                              onClick={() => handleAction('delete', user.id, user.role)}
+                              className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150"
+                            >
+                              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                                <span className="text-red-600">🗑️</span>
+                              </div>
+                              <div className="text-left">
+                                <div className="font-medium">Delete User</div>
+                                <div className="text-xs text-gray-500">Remove user permanently</div>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      
-                      <button
-                        onClick={() => handleAction('verify', user.id, user.role)}
-                        disabled={actionLoading === user.id}
-                        className="w-full bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                      >
-                        {actionLoading === user.id ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <>
-                            <span>✅</span>
-                            <span>Verify User</span>
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        onClick={() => handleAction('delete', user.id, user.role)}
-                        disabled={actionLoading === user.id}
-                        className="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                      >
-                        {actionLoading === user.id ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <>
-                            <span>🗑️</span>
-                            <span>Delete User</span>
-                          </>
-                        )}
-                      </button>
                     </div>
+
+                    {/* Close dropdown when clicking outside */}
+                    {openDropdown === user.id && (
+                      <div 
+                        className="fixed inset-0 z-0" 
+                        onClick={() => setOpenDropdown(null)}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}
@@ -369,7 +621,7 @@ function SentActivities({ sentActivities }: { sentActivities: SentActivities[] }
 
   const handleAction = async (action: string, studentId: number, activityId: number) => {
     setActionLoading(activityId);
-    
+  
     try {
       if (action === 'verify') {
         await router.post(`/users/${studentId}/verify`);
@@ -382,7 +634,7 @@ function SentActivities({ sentActivities }: { sentActivities: SentActivities[] }
       setActionLoading(null);
     }
   };
-
+ 
   const getStatusConfig = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'approved':
@@ -457,6 +709,9 @@ function SentActivities({ sentActivities }: { sentActivities: SentActivities[] }
                   Status
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Date Sent
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -517,6 +772,19 @@ function SentActivities({ sentActivities }: { sentActivities: SentActivities[] }
                         <span>{statusConfig.icon}</span>
                         <span>{activity.status}</span>
                       </span>
+                    </td>
+
+
+                  <td className="px-6 py-4">
+                      <div className="space-y-1">
+                        <div className="text-sm text-gray-900">
+                          {new Date(activity.created_at).toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(activity.created_at).toLocaleTimeString() }
+                          
+                        </div>
+                      </div>
                     </td>
 
                     {/* Actions */}
@@ -958,7 +1226,8 @@ type SentActivities ={
   name: string,
   club: string,
   links: string,
-  status: string
+  status: string,
+  created_at:string
 
 }
 
@@ -1477,6 +1746,399 @@ function ProjectList({ projectList }: { projectList: ProjectList[] }) {
 
 
 
+
+type Staff = {
+  id: number;
+  name: string;
+  last_name: string;
+  address: string;
+  gender: string;
+  email: string;
+  club: string;
+  status: string;
+};
+
+function Staffs({ staffs }: { staffs: Staff[] }) {
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [transferModal, setTransferModal] = useState<{
+    isOpen: boolean;
+    staff: Staff | null;
+    targetClub: string;
+  }>({
+    isOpen: false,
+    staff: null,
+    targetClub: ''
+  });
+
+  // Group staff by club
+  const staffByClub = staffs.reduce((acc, staff) => {
+    const club = staff.club || 'Other';
+    if (!acc[club]) {
+      acc[club] = [];
+    }
+    acc[club].push(staff);
+    return acc;
+  }, {} as Record<string, Staff[]>);
+
+  // Define club order and colors
+  const clubs = [
+    { name: 'Programming', color: 'from-blue-600 to-blue-800' },
+    { name: 'Graphic Design', color: 'from-purple-600 to-purple-800' },
+    { name: 'Video Editing', color: 'from-green-600 to-green-800' }
+  ];
+
+  const handleAction = async (action: string, staffId: number, targetClub?: string) => {
+    setActionLoading(staffId);
+    
+    try {
+      if (action === 'transfer' && targetClub) {
+        // Handle transfer action
+        console.log(`Transferring staff ${staffId} to ${targetClub}`);
+        await router.post(`/staffs/${staffId}/transfer`, { targetClub });
+        setTransferModal({ isOpen: false, staff: null, targetClub: '' });
+      } else if (action === 'delete') {
+        if (confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) {
+          await router.delete(`/staffs/${staffId}/delete`);
+        }
+      }
+    } catch (error) {
+      console.error('Error performing action:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openTransferModal = (staff: Staff) => {
+    setTransferModal({
+      isOpen: true,
+      staff,
+      targetClub: ''
+    });
+  };
+
+  const closeTransferModal = () => {
+    setTransferModal({
+      isOpen: false,
+      staff: null,
+      targetClub: ''
+    });
+  };
+
+  const getTransferOptions = (currentClub: string) => {
+    return clubs.filter(club => club.name !== currentClub);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'inactive': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getClubColor = (club: string) => {
+    switch (club?.toLowerCase()) {
+      case 'programming': return 'bg-blue-100 text-blue-800';
+      case 'graphic design': return 'bg-purple-100 text-purple-800';
+      case 'video editing': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getClubButtonColor = (club: string) => {
+    switch (club?.toLowerCase()) {
+      case 'programming': return 'bg-blue-500 hover:bg-blue-600';
+      case 'graphic design': return 'bg-purple-500 hover:bg-purple-600';
+      case 'video editing': return 'bg-green-500 hover:bg-green-600';
+      default: return 'bg-gray-500 hover:bg-gray-600';
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">👨‍💼 Manage Staff</h1>
+          <p className="text-gray-600 mt-2">
+            Manage staff members organized by clubs
+          </p>
+        </div>
+        <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+          <span className="text-blue-800 font-medium">
+            Total Staff: {staffs?.length || 0}
+          </span>
+        </div>
+      </div>
+
+      {/* Transfer Modal */}
+      {transferModal.isOpen && transferModal.staff && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Transfer Staff Member
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Transfer <span className="font-semibold">{transferModal.staff.name} {transferModal.staff.last_name}</span> to another club:
+              </p>
+              
+              <div className="space-y-3 mb-6">
+                {getTransferOptions(transferModal.staff.club).map((club) => (
+                  <button
+                    key={club.name}
+                    onClick={() => setTransferModal(prev => ({ ...prev, targetClub: club.name }))}
+                    className={`w-full text-white px-4 py-3 rounded-lg transition-colors duration-200 font-medium flex items-center justify-between ${
+                      transferModal.targetClub === club.name 
+                        ? 'ring-2 ring-offset-2 ring-blue-500' 
+                        : ''
+                    } ${getClubButtonColor(club.name)}`}
+                  >
+                    <span>{club.name}</span>
+                    {transferModal.targetClub === club.name && (
+                      <span>✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={closeTransferModal}
+                  className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleAction('transfer', transferModal.staff!.id, transferModal.targetClub)}
+                  disabled={!transferModal.targetClub || actionLoading === transferModal.staff.id}
+                  className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {actionLoading === transferModal.staff.id ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <span>🔄</span>
+                      <span>Transfer</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Staff by Club */}
+      {clubs.map((club) => {
+        const clubStaff = staffByClub[club.name] || [];
+        
+        return (
+          <div key={club.name} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            {/* Club Header */}
+            <div className={`bg-gradient-to-r ${club.color} px-6 py-4`}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">{club.name} Club</h3>
+                <div className="bg-white/20 px-3 py-1 rounded-full">
+                  <span className="text-white text-sm font-medium">
+                    {clubStaff.length} {clubStaff.length === 1 ? 'Member' : 'Members'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Staff Table for this Club */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Staff Member
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Contact Info
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {clubStaff.map((staff) => (
+                    <tr key={staff.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      {/* Staff Info */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {staff.name?.[0]}{staff.last_name?.[0]}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {staff.name} {staff.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {staff.gender}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Contact Details */}
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div className="text-sm text-gray-900">
+                            <span className="font-medium">Email:</span> {staff.email}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            <span className="font-medium">Address:</span> {staff.address}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4">
+                        <div className="space-y-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(staff.status)}`}>
+                            {staff.status || 'Active'}
+                          </span>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getClubColor(staff.club)}`}>
+                            {staff.club}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col space-y-2 min-w-[200px]">
+                          <button
+                            onClick={() => openTransferModal(staff)}
+                            disabled={actionLoading === staff.id}
+                            className="w-full bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                          >
+                            {actionLoading === staff.id ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <>
+                                <span>🔄</span>
+                                <span>Transfer Staff</span>
+                              </>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleAction('delete', staff.id)}
+                            disabled={actionLoading === staff.id}
+                            className="w-full bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                          >
+                            {actionLoading === staff.id ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <>
+                                <span>🗑️</span>
+                                <span>Delete Staff</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Empty State for Club */}
+                  {clubStaff.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center">
+                        <div className="text-gray-500">
+                          <div className="text-3xl mb-2">👥</div>
+                          <p className="text-md font-medium text-gray-900 mb-1">No Staff Members</p>
+                          <p className="text-gray-600 text-sm">No staff members assigned to {club.name} club.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Other Clubs (if any) */}
+      {Object.keys(staffByClub)
+        .filter(club => !clubs.some(c => c.name === club))
+        .map((club) => {
+          const clubStaff = staffByClub[club] || [];
+          
+          return (
+            <div key={club} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-600 to-gray-800 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">{club}</h3>
+                  <div className="bg-white/20 px-3 py-1 rounded-full">
+                    <span className="text-white text-sm font-medium">
+                      {clubStaff.length} {clubStaff.length === 1 ? 'Member' : 'Members'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table for other clubs */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Staff Member
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {clubStaff.map((staff) => (
+                      <tr key={staff.id} className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-gray-900">
+                            {staff.name} {staff.last_name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{staff.email}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(staff.status)}`}>
+                            {staff.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => openTransferModal(staff)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                          >
+                            Transfer
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
+    </div>
+  );
+}
+
 type ProjectList = {
   id:number;user_id:number;name:string;club: string; project_type:string;title:string;place:string;date:string;time:string;description:string;status:string;created_at:string
 }
@@ -1733,6 +2395,9 @@ function JoinedProjectList({
   );
 }
 
+type Staffs = {
+  id:number;name:string;last_name:string;address:string;gender:string;email:string;club:string;status:string
+}
 
 export default function AdminTab({
   joinedProject, 
@@ -1746,7 +2411,9 @@ export default function AdminTab({
   totalStaffs, 
   username, 
   users, 
-  totalActives 
+  totalActives,
+  staffs
+,club
 }: {
   joinedProject: JoinedProject[];
   projectList: ProjectList[];
@@ -1760,8 +2427,11 @@ export default function AdminTab({
   username: string;
   totalUsers: number;
   totalStaffs: number;
+  staffs: Staffs[];
+  club:Club[]
 }) {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "createCertificate" | "generateCertificate" | "projectList" | "manageUsers" | "userRequest" | "addProject" | "sentActivities" | "generateActivity" | "activityList">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "staffs" | "createCertificate" | "generateCertificate" | "projectList" | "manageUsers" | "userRequest" | "addProject" | "sentActivities" | "generateActivity" | "activityList">("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const HandleLogout = () => {
     router.post("/logout");
@@ -1770,6 +2440,7 @@ export default function AdminTab({
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: "📊" },
     { id: "manageUsers", label: "Manage Users", icon: "👥" },
+    { id: "staffs", label: "Staff Manager", icon: "👨‍💼" },
     { id: "sentActivities", label: "Sent Activities", icon: "📩" },
     { id: "activityList", label: "Activity List", icon: "📃" },
     { id: "generateActivity", label: "Generate Activity", icon: "⚙️" },
@@ -1778,19 +2449,44 @@ export default function AdminTab({
     { id: "generateCertificate", label: "Joined Projects", icon: "🎓" },
   ];
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Sidebar */}
-      <div className="w-64 bg-gradient-to-b from-blue-600 to-purple-700 flex flex-col justify-between py-6 px-4 shadow-xl overflow-y-auto">
+      <div className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-gradient-to-b from-blue-600 to-purple-700 flex flex-col justify-between py-6 px-4 shadow-xl overflow-y-auto transition-all duration-300 relative`}>
+        
+        {/* Toggle Button */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-6 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors duration-200 border border-gray-200"
+        >
+          {isSidebarOpen ? (
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+        </button>
+
         {/* User Info */}
-        <div className="text-center mb-8">
+        <div className={`text-center mb-8 ${!isSidebarOpen && 'px-2'}`}>
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
             <span className="text-blue-600 font-bold text-xl">
               {username[0]}{lastName[0]}
             </span>
           </div>
-          <h2 className="text-white font-semibold text-lg">{username}</h2>
-          <p className="text-blue-100 text-sm">Administrator</p>
+          {isSidebarOpen && (
+            <>
+              <h2 className="text-white font-semibold text-lg truncate">{username}</h2>
+              <p className="text-blue-100 text-sm">Administrator</p>
+            </>
+          )}
         </div>
 
         {/* Navigation */}
@@ -1799,14 +2495,17 @@ export default function AdminTab({
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center ${isSidebarOpen ? 'space-x-3 px-4 py-3 justify-start' : 'justify-center p-3'} rounded-lg transition-all duration-200 ${
                 activeTab === item.id
                   ? "bg-white text-blue-600 shadow-md"
                   : "text-white hover:bg-blue-500 hover:bg-opacity-30"
               }`}
+              title={!isSidebarOpen ? item.label : ''}
             >
               <span className="text-lg">{item.icon}</span>
-              <span className="font-medium text-left">{item.label}</span>
+              {isSidebarOpen && (
+                <span className="font-medium text-left truncate">{item.label}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -1814,18 +2513,32 @@ export default function AdminTab({
         {/* Logout Button */}
         <button
           onClick={HandleLogout}
-          className="w-full bg-white text-blue-600 py-3 px-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-md mt-4 flex items-center justify-center space-x-2"
+          className={`w-full bg-white text-blue-600 ${isSidebarOpen ? 'py-3 px-4' : 'p-3'} rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-md mt-4 flex items-center ${isSidebarOpen ? 'justify-start space-x-2' : 'justify-center'}`}
+          title={!isSidebarOpen ? "Logout" : ''}
         >
           <span>🚪</span>
-          <span>Logout</span>
+          {isSidebarOpen && <span>Logout</span>}
         </button>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
+        {/* Mobile Sidebar Toggle */}
+        <div className="lg:hidden p-4 border-b border-gray-200 bg-white">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
         <div className="p-6">
           {activeTab === "dashboard" && (
-            <Dashboard 
+            <Dashboard club = {club}
               verifiedUsers={verifiedUsers} 
               totalActives={totalActives} 
               totalUsers={totalUsers} 
@@ -1833,6 +2546,7 @@ export default function AdminTab({
             />
           )}
           {activeTab === "manageUsers" && <ManageUsers users={users} />}
+          {activeTab === "staffs" && <Staffs staffs={staffs} />}
           {activeTab === "sentActivities" && <SentActivities sentActivities={sentActivities} />}
           {activeTab === "generateActivity" && <GenerateActivity username={username} />}
           {activeTab === "activityList" && <ActivityList activities={activities} />}
@@ -1844,9 +2558,16 @@ export default function AdminTab({
               projectList={projectList} 
             />
           )}
-         
         </div>
       </div>
+
+      {/* Mobile Overlay */}
+      {!isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(true)}
+        />
+      )}
     </div>
   );
 }

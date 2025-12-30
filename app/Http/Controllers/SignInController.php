@@ -22,6 +22,7 @@ class SignInController extends Controller
                 'club' => $request->club,
                 'created_at' => now(),
                 'updated_at' => now(),
+                'email' => $request->email
             ]
         );
         

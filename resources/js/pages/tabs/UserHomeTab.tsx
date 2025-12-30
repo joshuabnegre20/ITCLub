@@ -10,6 +10,8 @@ type Activity = {
 };
 
 function Home({
+  
+  likes,
   verification,
   getPostedData,
   name,
@@ -19,6 +21,8 @@ function Home({
   students,
   notifications
 }: {
+ 
+  likes:number
   getPostedData: postedData[];
   name: string;
   club: string;
@@ -29,6 +33,7 @@ function Home({
   notifications: Notifications[];
 }) {
   const [visible, setVisible] = useState(false);
+  const [openCommentIndex, setOpenCommentIndex] = useState<number | null>(null);
 
   const { data, setData, post } = useForm({
     userid: 0,
@@ -36,7 +41,10 @@ function Home({
     name: "",
     description: "",
     picture: null as File | null,
+    comment: ''
   });
+
+  
 
   const getData = () => {
     setData("userid", studentId);
@@ -55,8 +63,24 @@ function Home({
     });
   };
 
+  const toggleCommentSection = (index: number, id:number) => {
+    setOpenCommentIndex(openCommentIndex === index ? null : index);
+    
+    console.log()
+  };
+
+  const handleComment =(postId:number)=>{
+
+    post(`/add-comment/${postId}/${studentId}`)
+    setData('comment', '')
+
+
+  }
+
+  
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50  ">
       {/* Left Sidebar - Members */}
       <div className="w-80 bg-white border-r border-gray-200 p-6 space-y-6 overflow-y-auto">
         <div className="space-y-4">
@@ -196,13 +220,53 @@ function Home({
               )}
             </div>
           ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center mb-6">
-              <div className="text-yellow-600 text-lg font-semibold mb-2">
-                🔒 Account Verification Required
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <span className="text-yellow-600">🔒</span>
+                </div>
+                <div>
+                  <h3 className="text-yellow-800 text-lg font-semibold">
+                    Account Verification Required
+                  </h3>
+                  <p className="text-yellow-600 text-sm">
+                    Verify your account to unlock all features
+                  </p>
+                </div>
               </div>
-              <p className="text-yellow-700">
+              
+              <p className="text-yellow-700 mb-4">
                 Please verify your account to create posts and interact with the community.
               </p>
+              
+              <div className="bg-white border border-yellow-300 rounded-lg p-4">
+                <h4 className="font-semibold text-yellow-800 mb-3 flex items-center">
+                  <span className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs mr-2">
+                    !
+                  </span>
+                  Follow these steps to verify:
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                      1
+                    </div>
+                    <span className="text-yellow-700">Click <strong>"Others"</strong> on the upper right corner</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                      2
+                    </div>
+                    <span className="text-yellow-700">Click <strong>"Verify Account"</strong></span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                      3
+                    </div>
+                    <span className="text-yellow-700">Choose an activity to solve</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -245,19 +309,96 @@ function Home({
 
                 {/* Post Footer */}
                 <div className="flex items-center space-x-4 pt-4 border-t border-gray-100">
-                  <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors duration-200">
+                  <button onClick={() => router.post(`/plus-like/${post.id}/${studentId}`)} className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors duration-200">
                     <span>❤️</span>
-                    <span className="text-sm">Like</span>
+                    <span className="text-sm text-black">{ post.likes }</span>
                   </button>
-                  <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors duration-200">
+                  { /* <button 
+                    onClick={() => toggleCommentSection(index,post.id)}
+                    className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors duration-200"
+                  >
                     <span>💬</span>
-                    <span className="text-sm">Comment</span>
-                  </button>
+                    <span className="text-sm">
+                      {openCommentIndex === index ? 'Close' : 'Comment'}
+                    </span>
+                  </button> 
                   <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors duration-200">
                     <span>🔄</span>
                     <span className="text-sm">Share</span>
-                  </button>
+                  </button>*/}
                 </div>
+
+                {/* Comment Section */}
+                {openCommentIndex === index && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="space-y-4">
+                      {/* Comment Input */}
+                      <div className="flex space-x-3">
+                        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {name[0]}{lastName[0]}
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={data.comment}
+                            placeholder="Write a comment..."
+                            onChange={(e)=> setData('comment', e.target.value)}
+                            className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                          />
+                        </div>
+                        <button
+                        onClick={() => handleComment(post.id)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors duration-200">
+                          Post
+                        </button>
+                      </div>
+
+                      {/* Comments List */}
+                      <div className="space-y-3">
+                        {/* Sample Comment - Replace with actual comments data */}
+                        <div className="flex space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            JD
+                          </div>
+                          <div className="flex-1">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <p className="font-semibold text-sm text-gray-800">John Doe</p>
+                              <p className="text-sm text-gray-600 mt-1">This is a great post! Thanks for sharing.</p>
+                            </div>
+                            <div className="flex items-center space-x-3 mt-2 ml-3 text-xs text-gray-500">
+                              <button className="hover:text-blue-500">Like</button>
+                              <span>•</span>
+                              <span>2h ago</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Another sample comment */}
+                        <div className="flex space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            SJ
+                          </div>
+                          <div className="flex-1">
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <p className="font-semibold text-sm text-gray-800">Sarah Johnson</p>
+                              <p className="text-sm text-gray-600 mt-1">I completely agree with this! 👏</p>
+                            </div>
+                            <div className="flex items-center space-x-3 mt-2 ml-3 text-xs text-gray-500">
+                              <button className="hover:text-blue-500">Like</button>
+                              <span>•</span>
+                              <span>1h ago</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* No comments state */}
+                      {/* <div className="text-center py-4">
+                        <p className="text-gray-500 text-sm">No comments yet. Be the first to comment!</p>
+                      </div> */}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
 
@@ -546,9 +687,7 @@ function Profile({
               <p className="text-gray-500 max-w-sm mx-auto">
                 You haven't created any posts yet. Share your thoughts with the community!
               </p>
-              <button className="mt-6 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-medium">
-                Create Your First Post
-              </button>
+              
             </div>
           )}
         </div>
@@ -646,9 +785,34 @@ function Projects({
           <p className="text-gray-600 mb-6">
             Please verify your account to access projects and participate in club activities.
           </p>
-          <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-medium">
-            Verify Account
-          </button>
+          <div className="bg-white border border-yellow-300 rounded-lg p-4">
+    <h4 className="font-semibold text-yellow-800 mb-3 flex items-center">
+      <span className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs mr-2">
+        !
+      </span>
+      Follow these steps to verify:
+    </h4>
+    <div className="space-y-3">
+      <div className="flex items-center space-x-3">
+        <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+          1
+        </div>
+        <span className="text-yellow-700">Click <strong>"Others"</strong> on the upper right corner</span>
+      </div>
+      <div className="flex items-center space-x-3">
+        <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+          2
+        </div>
+        <span className="text-yellow-700">Click <strong>"Verify Account"</strong></span>
+      </div>
+      <div className="flex items-center space-x-3">
+        <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+          3
+        </div>
+        <span className="text-yellow-700">Choose an activity to solve</span>
+      </div>
+    </div>
+  </div>
         </div>
       </div>
     );
@@ -1658,6 +1822,7 @@ type postedData = {
   club:string;
   created_at:string;
   userid:number;
+  likes:number
 }
 
 type Students ={
@@ -1691,7 +1856,22 @@ type StudentPost ={
   created_at:string
 }
 
+type Comments ={
+  comments: { 
+    [postId: number]: { 
+      id: number; 
+      comment: string; 
+      postId: number; 
+      created_at: string; 
+      name: string; 
+      last_name: string; 
+    }
+  };
+}
+
 export default function UserHomeTab({
+ 
+  likes,
   activeStaffs,
   selectAct,
   username,
@@ -1709,6 +1889,8 @@ export default function UserHomeTab({
   studentPost,
   usernameP
 }: {
+ 
+  likes:number;
   activeStaffs: ActiveStaffs[];
   selectedAct: SelectedActivity[];
   selectAct: Activity[];
@@ -1842,6 +2024,7 @@ export default function UserHomeTab({
       <main className="flex-1 p-8 overflow-auto">
         {activeTab === "home" && (
           <Home 
+          likes = {likes}
             notifications={notifications}
             verification={verification}
             students={students}

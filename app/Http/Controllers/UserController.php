@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+use app\Mail\Verification;
 
 class UserController extends Controller
 {
@@ -51,6 +53,7 @@ class UserController extends Controller
             'username'  => $user->username,
             'password'  => $user->password,
             'role'      => 'Staff',
+            'email'     => $user->email
         ]);
 
         DB::table('user_db')->where('id', $id)->update([
@@ -98,8 +101,33 @@ class UserController extends Controller
         DB::table('sent_activities')->where('activity_id',$id)->update(['status' => 'Rejected']);
 
     }
+   public function PlusLike($id, $studentId){
+   
+    DB::table('likes')->insert([
+        'postId' => $id,
+        'userId' =>$studentId,
+        
+    ]);
 
+    $totalLikes = DB::table('post_db')->where('id',$id)->value('likes');
 
+    DB::table('post_db')->where('id', $id)->update([
+        'likes' => $totalLikes+1
+    ]);
+}
+
+public function AddComment(Request $request, $id,$studentId){
+
+    DB::table('comments_column')->insert([
+        'comment' => $request->comment,
+        'userId' => $studentId,
+        'postId' => $id,
+        'created_at', now()
+    ]);
+
+}
+
+   
 
     /**
      * <?php

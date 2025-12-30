@@ -1,0 +1,7 @@
+2025-11-01 14:34:53.373 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/MADELYN/Desktop/ITClub/routes)
+2025-11-01 14:35:56.738 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/MADELYN/Desktop/ITClub/resources/js/pages)
+2025-11-01 14:35:57.792 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/MADELYN/Desktop/ITClub/resources/js/pages)
+2025-11-01 14:36:00.606 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/MADELYN/Desktop/ITClub/resources/js/pages)
+2025-11-01 14:36:00.958 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/MADELYN/Desktop/ITClub/resources/js/pages)
+2025-11-01 15:28:46.351 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/MADELYN/Desktop/ITClub/resources/js/pages)
+2025-11-01 15:28:51.950 [main] WARN  com.rs.mv.mvvs.Startup - [LSP:100104]ROCKET MV BASIC EXTENSION exited
